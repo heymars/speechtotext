@@ -1,7 +1,11 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:record_it/db/data_holder.dart';
+import 'package:record_it/db/studentDao.dart';
+import 'package:record_it/edit_student_detail_screen.dart';
 import 'package:record_it/shared_prefs.dart';
+import 'package:record_it/student_detail_model.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -35,12 +39,14 @@ class EnterDetailState extends State<EnterDetailPage> {
   TextEditingController nameController = TextEditingController();
   TextEditingController fatherNameController = TextEditingController();
   TextEditingController mobileNumberController = TextEditingController();
-
+  int sno = 1;
+  final StudentDao studentDao = StudentDao();
   @override
   void initState() {
     super.initState();
     _initSpeech();
     SharedPreferenceHelper.init();
+    sno = SharedPreferenceHelper.getAccessToken() ?? 1;
   }
 
   /// This has to happen only once per app
@@ -97,7 +103,7 @@ class EnterDetailState extends State<EnterDetailPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Visibility(
-                  visible: mobileNumber.isEmpty,
+                  visible: !_isEnabled,
                   child: GestureDetector(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -105,7 +111,7 @@ class EnterDetailState extends State<EnterDetailPage> {
                         height: 42,
                         decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(5),
-                          color: Colors.blueAccent,
+                          color: Colors.blue,
                         ),
                         width: double.infinity,
                         child: Center(child: Text(_speechToText.isNotListening ?'Record': 'Listening')),
@@ -116,7 +122,7 @@ class EnterDetailState extends State<EnterDetailPage> {
                         onClick('NAME');
                       } else if(currentValue == 'NAME') {
                         onClick('FATHER_NAME');
-                      } else if(currentValue == 'FATHER_NAME'){
+                      } else if(currentValue == 'FATHER_NAME') {
                         onClick('MOBILE');
                       }
                     },
@@ -144,15 +150,26 @@ class EnterDetailState extends State<EnterDetailPage> {
                   ),
                 ),
                 Visibility(
-                  visible: mobileNumber.isNotEmpty,
+                  visible: _isEnabled,
                   child: Container(
                     padding: const EdgeInsets.all(16.0),
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        int value = SharedPreferenceHelper.getAccessToken() ?? 1;
-                        SharedPreferenceHelper.setAccessToken(value + 1 );
-
+                        setState(() {
+                          sno += 1;
+                          StudentDetail student = StudentDetail(name: name, fatherName: fatherName, mobileNumber: mobileNumber);
+                          studentDao.insert(student.toJson());
+                          SharedPreferenceHelper.setAccessToken(sno);
+                          nameController.text = '';
+                          fatherNameController.text = '';
+                          mobileNumberController.text = '';
+                          name = '';
+                          fatherName = '';
+                          mobileNumber = '';
+                          _isEnabled = false;
+                          currentValue = '';
+                        });
                       },
                       child: const Padding(
                         padding: EdgeInsets.all(12.0),
@@ -167,11 +184,25 @@ class EnterDetailState extends State<EnterDetailPage> {
                     padding: const EdgeInsets.all(16.0),
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
+                      onPressed: () async {
+                      final bool result = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => EnterDetailPage()),
+                          MaterialPageRoute(builder: (context) => EditStudentDetailPage(name: name,fatherName: fatherName,mobileNumber: mobileNumber,)),
                         );
+                      if(result) {
+                        setState(() {
+                          sno += 1;
+                          SharedPreferenceHelper.setAccessToken(sno);
+                          nameController.text = '';
+                          fatherNameController.text = '';
+                          mobileNumberController.text = '';
+                          name = '';
+                          fatherName = '';
+                          mobileNumber = '';
+                          _isEnabled = false;
+                          currentValue = '';
+                        });
+                      }
                       },
                       child: const Padding(
                         padding: EdgeInsets.all(12.0),
@@ -187,6 +218,10 @@ class EnterDetailState extends State<EnterDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 24.0,left: 16, right: 16, bottom: 8),
+                child: Text('SNo. $sno'),
+              ),
               Container(
                 padding: const EdgeInsets.all(16),
                 child:  const Text(
@@ -226,7 +261,7 @@ class EnterDetailState extends State<EnterDetailPage> {
                 ),
               ),
               Visibility(
-                visible: fatherName.isNotEmpty,
+                visible: fatherName.trim().isNotEmpty,
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   child:  const Text(
@@ -236,7 +271,7 @@ class EnterDetailState extends State<EnterDetailPage> {
                 ),
               ),
               Visibility(
-                visible: fatherName.isNotEmpty,
+                visible: fatherName.trim().isNotEmpty,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: TextField(

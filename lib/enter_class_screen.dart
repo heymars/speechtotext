@@ -23,12 +23,9 @@ class EnterClassPage extends StatefulWidget {
 }
 
 class EnterClassState extends State<EnterClassPage> {
-  int sno = 1;
   @override
   void initState() {
     super.initState();
-    SharedPreferenceHelper.init();
-    sno = SharedPreferenceHelper.getAccessToken() ?? 1;
   }
   TextEditingController nameController = TextEditingController();
   @override
@@ -70,14 +67,10 @@ class EnterClassState extends State<EnterClassPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children:  [
-                    const Padding(
+                  children:  const [
+                    Padding(
                       padding: EdgeInsets.only(top: 50.0,left: 16, right: 16, bottom: 8),
                       child: Text('Enter Class Detail:'),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 50.0,left: 16, right: 16, bottom: 8),
-                      child: Text(sno.toString()),
                     ),
                   ],
                 ),

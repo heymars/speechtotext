@@ -1,8 +1,9 @@
 import 'dart:async';
-
+import 'package:path/path.dart' as cs;
 import 'package:path_provider/path_provider.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
+
 
 class AppDatabase {
   static final AppDatabase _appDatabase = AppDatabase._internal();
@@ -30,10 +31,10 @@ class AppDatabase {
     // make sure it exists
     await dir.create(recursive: true);
     // build the database path
-    // var dbPath = cs.join(dir.path, 'chat_database.db');
+    var dbPath = cs.join(dir.path, 'chat_database.db');
     // // open the database
-    // var db = await databaseFactoryIo.openDatabase(dbPath);
+    var db = await databaseFactoryIo.openDatabase(dbPath);
 
-    // _dbOpenCompleter?.complete(db);
+    _dbOpenCompleter?.complete(db);
   }
 }

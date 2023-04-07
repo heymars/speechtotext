@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:record_it/shared_prefs.dart';
+import 'package:record_it/student_list_page.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-import 'enter_details_screen.dart';
 
 class EditStudentDetailPage extends StatefulWidget {
-  const EditStudentDetailPage({super.key});
+  const EditStudentDetailPage({super.key, required this.name, required this.fatherName, required this.mobileNumber});
+  final String name;
+  final String fatherName;
+  final String mobileNumber;
 
   @override
   State<StatefulWidget> createState() {
-     return EnterDetailState();
+     return EnterStudentDetailState();
   }
 }
 
-class EnterDetailState extends State<EnterDetailPage> {
+class EnterStudentDetailState extends State<EditStudentDetailPage> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   bool _isEnabled = false;
+  bool _isAcceptBtnEnabled = false;
   String _lastWords = '';
   String currentValue = '';
   String name = '';
@@ -33,6 +37,11 @@ class EnterDetailState extends State<EnterDetailPage> {
     super.initState();
     _initSpeech();
     SharedPreferenceHelper.init();
+    nameController.text = widget.name;
+    fatherNameController.text = widget.fatherName;
+    mobileNumberController.text = widget.mobileNumber;
+    _isEnabled = true;
+    _isAcceptBtnEnabled = true;
   }
 
   /// This has to happen only once per app
@@ -69,6 +78,7 @@ class EnterDetailState extends State<EnterDetailPage> {
         Future.delayed(const Duration(milliseconds: 500), () {
           setState(() {
             _isEnabled = true;
+            _isAcceptBtnEnabled = true;
           });
         });
       }
@@ -78,6 +88,7 @@ class EnterDetailState extends State<EnterDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text('Speech Demo'),
       ),
@@ -89,62 +100,41 @@ class EnterDetailState extends State<EnterDetailPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Visibility(
-                  visible: mobileNumber.isEmpty,
-                  child: GestureDetector(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Container(
-                        height: 42,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: Colors.blueAccent,
-                        ),
-                        width: double.infinity,
-                        child: Center(child: Text(_speechToText.isNotListening ?'Record': 'Listening')),
-                      ),
-                    ),
-                    onLongPressStart: (_) {
-                      if(currentValue.isEmpty) {
-                        onClick('NAME');
-                      } else if(currentValue == 'NAME') {
-                        onClick('FATHER_NAME');
-                      } else if(currentValue == 'FATHER_NAME'){
-                        onClick('MOBILE');
-                      }
-                    },
-                    onLongPressEnd: (_) {
-                      setState(() {
-                        if(currentValue == 'MOBILE') {
-                          mobileNumber = _lastWords;
-                        } else if (currentValue == 'NAME') {
-                          name = _lastWords;
-                        } else if(currentValue == 'FATHER_NAME'){
-                          fatherName = _lastWords;
-                        }
-                        if(name.isNotEmpty && fatherName.isNotEmpty && mobileNumber.isNotEmpty) {
-                          Future.delayed(const Duration(milliseconds: 500), () {
-                            setState(() {
-                              _isEnabled = true;
-                            });
-                          });
-                        }
-                        if(_speechToText.isListening) {
-                          _stopListening();
-                        }
-                      });
-                    },
-                  ),
-                ),
-                Visibility(
-                  visible: mobileNumber.isNotEmpty,
+                  visible: _isEnabled,
                   child: Container(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        int value = SharedPreferenceHelper.getAccessToken() ?? 1;
-                        SharedPreferenceHelper.setAccessToken(value + 1 );
-
+                        setState(() {
+                          nameController.text = '';
+                          name = '';
+                          fatherNameController.text = '';
+                          fatherName = '';
+                          mobileNumberController.text = '';
+                          mobileNumber = '';
+                          _isAcceptBtnEnabled = false;
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: Text('Re-record All'),
+                      ),
+                    ),
+                  ),
+                ),
+                Visibility(
+                  visible: _isAcceptBtnEnabled,
+                  child: Container(
+                    padding: const EdgeInsets.only(left: 16.0, right: 16),
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const StudentListPage()),
+                        );
+                        // Navigator.pop(context, true);
                       },
                       child: const Padding(
                         padding: EdgeInsets.all(12.0),
@@ -152,99 +142,158 @@ class EnterDetailState extends State<EnterDetailPage> {
                       ),
                     ),
                   ),
-                ),
-                Visibility(
-                  visible: mobileNumber.isNotEmpty,
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => EnterDetailPage()),
-                        );
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: Text('Edit'),
-                      ),
-                    ),
-                  ),
                 )
               ],
             ),
           ),
-          Column (
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                child:  const Text(
-                  'Student Name:',
-                  style: TextStyle(fontSize: 20.0),
+          SingleChildScrollView(
+            child: Column (
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child:  const Text(
+                    'Student Name:',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
                 ),
-              ),
-              Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    GestureDetector(
+                      onTap: () {
+                        onClick('NAME');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Container(
+                            height: 60,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(40),
+                              color: Colors.white,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.blueAccent, //New
+                                  blurRadius: 25.0,
+                                )
+                              ],
+                            ),
 
-                ],
-              ),
-              Visibility(
-                visible: name.isNotEmpty,
-                child: Container(
+                            child: const Icon(Icons.mic, color: Colors.blueAccent,)
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+                Container(
                   padding: const EdgeInsets.all(16),
                   child:  const Text(
                     'Father Name:',
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
-              ),
-              Visibility(
-                visible: name.isNotEmpty,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    controller: fatherNameController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextField(
+                          controller: fatherNameController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    GestureDetector(
+                      onTap: () {
+                        onClick('FATHER_NAME');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Container(
+                            height: 60,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(40),
+                              color: Colors.white,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.blueAccent, //New
+                                  blurRadius: 25.0,
+                                )
+                              ],
+                            ),
+
+                            child: const Icon(Icons.mic, color: Colors.blueAccent,)
+                        ),
+                      ),
+                    )
+                  ],
                 ),
-              ),
-              Visibility(
-                visible: fatherName.isNotEmpty,
-                child: Container(
+                Container(
                   padding: const EdgeInsets.all(16),
                   child:  const Text(
                     'Mobile Number:',
                     style: TextStyle(fontSize: 20.0),
                   ),
                 ),
-              ),
-              Visibility(
-                visible: fatherName.isNotEmpty,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: TextField(
-                    controller: mobileNumberController,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
+                Row(
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextField(
+                          controller: mobileNumberController,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    GestureDetector(
+                      onTap: () {
+                        onClick('MOBILE');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: Container(
+                            height: 60,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(40),
+                              color: Colors.white,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.blueAccent, //New
+                                  blurRadius: 25.0,
+                                )
+                              ],
+                            ),
+
+                            child: const Icon(Icons.mic, color: Colors.blueAccent,)
+                        ),
+                      ),
+                    )
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -264,6 +313,8 @@ class EnterDetailState extends State<EnterDetailPage> {
     });
     if(_speechToText.isNotListening) {
       _startListening();
+    } else {
+      _stopListening();
     }
   }
 }

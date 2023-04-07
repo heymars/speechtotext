@@ -1,3 +1,9 @@
+class ClassDetail {
+  ClassDetail({this.className, this.studentList});
+  String? className;
+  List<StudentDetail>? studentList;
+}
+
 class StudentDetail {
   StudentDetail({
       this.className,
@@ -6,7 +12,8 @@ class StudentDetail {
       this.mobileNumber,});
 
   StudentDetail.fromJson(dynamic json) {
-    className = json['className'];
+
+    name = json['className'];
     name = json['name'];
     fatherName = json['fatherName'];
     mobileNumber = json['mobileNumber'];
